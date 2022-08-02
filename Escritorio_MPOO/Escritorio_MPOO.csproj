@@ -116,7 +116,9 @@
     <None Include="Resources\MiniSuper.png" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Script BD\MiniSuper.sql" />
+    <Content Include="BD Diagramas\Proyecto MiniSuper-Entidades.png" />
+    <Content Include="BD Diagramas\Proyecto MiniSuper-Seguridad.png" />
+    <Content Include="BD Script\MiniSuper.sql" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
