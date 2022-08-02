@@ -379,7 +379,7 @@ CREATE PROC InsertarProducto
 @IdUsuarioRegistro INT
 AS
 BEGIN
-	INSERT INTO Productos (IdUnidadMedida, CodigoBarra, Descripcion, PrecioUnitario, PorcentajeUtilidad, PorcentajeDescuento, IdUsuarioRegistro, FechaRegistro, IdUsuarioActualiza, FechaActualizacion, Activo)
+	INSERT INTO Productos (IdUnidadMedida, CodigoBarra, Descripcion, PrecioUnitario, PorcentajeUtilidad, PorcentajeDescuento, IdUsuarioRegistro, FechaRegistro,Activo)
 	VALUES (@IdUnidadMedida, @CodigoBarra, @Descripcion, @PrecioUnitario, @PorcentajeUtilidad, @PorcentajeDescuento, @IdUsuarioRegistro, GETDATE(), 1);
 SELECT SCOPE_IDENTITY();
 END

@@ -7,7 +7,7 @@ namespace DAL
     {
         public static DataTable ListarRoles(bool Todos = true,int IdRol = 0)
         {
-            SqlConnection Conexion = new SqlConnection(Properties.Settings.Default.Conexion);
+            SqlConnection Conexion = new SqlConnection(ConexionBD.CadenaConexion);
             Conexion.Open();
             SqlCommand Cmd = new SqlCommand("ListarRol",Conexion);
             Cmd.CommandType = CommandType.StoredProcedure;
