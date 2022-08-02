@@ -191,7 +191,7 @@ BEGIN
 	WHERE IdUsuario = @IdUsuario
 END
 GO
-ALTER PROC ListarUsuarios 
+CREATE PROC ListarUsuarios 
 @Todos BIT,
 @IdUsuario INT = 0,
 @LOGIN VARCHAR(200) = '',
@@ -261,6 +261,59 @@ BEGIN
 	END
 END
 GO
+CREATE PROC InsertarUnidadMedida
+@Descripcion VARCHAR(200),
+@IdUsuarioRegistro INT
+AS
+BEGIN
+	INSERT INTO UnidadesMedidas (Descripcion, IdUsuarioRegistro, FechaRegistro,Activo)
+	VALUES (@Descripcion, @IdUsuarioRegistro, GETDATE(),1);
+	SELECT SCOPE_IDENTITY()
+END
+GO
+CREATE PROC ActualizarUnidadMedida
+@IdUnidadMedida INT,
+@Descripcion VARCHAR(200),
+@IdUsuarioActualiza INT
+AS
+BEGIN
+	UPDATE UnidadesMedidas 
+SET Descripcion = @Descripcion
+   ,IdUsuarioActualiza = @IdUsuarioActualiza
+   ,FechaActualizacion = GETDATE()
+WHERE IdUnidadMedida = @IdUnidadMedida;
+END
+GO
+CREATE PROC AnularUnidadMedida
+@IdUnidadMedida INT,
+@IdUsuarioActualiza INT
+AS
+BEGIN
+	UPDATE UnidadesMedidas 
+SET IdUsuarioActualiza = @IdUsuarioActualiza
+   ,FechaActualizacion = GETDATE()
+   ,Activo = 0
+WHERE IdUnidadMedida = @IdUnidadMedida;
+END
+GO
+CREATE PROC ListarUnidadMedidas 
+@Todos BIT,
+@IdUnidadMedida INT = 0
+AS
+BEGIN
+	IF (@Todos = 1)
+	BEGIN
+		SELECT IdUnidadMedida,Descripcion 
+		FROM UnidadesMedidas
+	END
+	ELSE
+	BEGIN
+		SELECT IdUnidadMedida,Descripcion
+		FROM UnidadesMedidas 
+		WHERE IdUnidadMedida = @IdUnidadMedida
+	END
+END
+GO
 CREATE PROC InsertarRol @Descripcion VARCHAR(200),
 @IdUsuarioRegistro INT
 AS
@@ -294,12 +347,12 @@ BEGIN
 	WHERE IdRol = @IdRol;
 END
 GO
-CREATE PROC ListarRol @Todos BIT,
+CREATE PROC ListarRol 
+@Todos BIT,
 @IdRol INT = 0
 AS
 BEGIN
-	IF (@Todos = 1
-		AND @IdRol = 0)
+	IF (@Todos = 1)
 	BEGIN
 		SELECT
 			IdRol
@@ -316,6 +369,108 @@ BEGIN
 	END
 END
 GO
+CREATE PROC InsertarProducto
+@IdUnidadMedida INT,
+@CodigoBarra INT,
+@Descripcion VARCHAR(200),
+@PrecioUnitario DECIMAL(18,2),
+@PorcentajeUtilidad DECIMAL (18,2),
+@PorcentajeDescuento DECIMAL(18,2),
+@IdUsuarioRegistro INT
+AS
+BEGIN
+	INSERT INTO Productos (IdUnidadMedida, CodigoBarra, Descripcion, PrecioUnitario, PorcentajeUtilidad, PorcentajeDescuento, IdUsuarioRegistro, FechaRegistro, IdUsuarioActualiza, FechaActualizacion, Activo)
+	VALUES (@IdUnidadMedida, @CodigoBarra, @Descripcion, @PrecioUnitario, @PorcentajeUtilidad, @PorcentajeDescuento, @IdUsuarioRegistro, GETDATE(), 1);
+SELECT SCOPE_IDENTITY();
+END
+GO
+CREATE PROC ActualizarProducto
+@IdProducto INT,
+@IdUnidadMedida INT,
+@CodigoBarra INT,
+@Descripcion VARCHAR(200),
+@PrecioUnitario DECIMAL(18,2),
+@PorcentajeUtilidad DECIMAL (18,2),
+@PorcentajeDescuento DECIMAL(18,2),
+@IdUsuarioActualiza INT
+AS
+BEGIN
+	UPDATE Productos 
+SET IdUnidadMedida = @IdUnidadMedida
+   ,CodigoBarra = @CodigoBarra
+   ,Descripcion = @Descripcion
+   ,PrecioUnitario = @PrecioUnitario
+   ,PorcentajeUtilidad = @PorcentajeUtilidad
+   ,PorcentajeDescuento = @PorcentajeDescuento
+   ,IdUsuarioActualiza = @IdUsuarioActualiza
+   ,FechaActualizacion = GETDATE()
+WHERE IdProducto = @IdProducto;
+END
+GO
+CREATE PROC AnularProducto
+@IdProducto INT,
+@IdUsuarioActualiza INT
+AS
+BEGIN
+	UPDATE Productos 
+SET 
+   IdUsuarioActualiza = @IdUsuarioActualiza
+   ,FechaActualizacion = GETDATE()
+   ,Activo = 0
+WHERE IdProducto = @IdProducto;
+END
+GO
+CREATE PROC ListarProductos
+@Todos BIT,
+@IdProducto INT = 0
+AS
+BEGIN
+	IF (@Todos = 1)
+		BEGIN
+			SELECT p.IdProducto
+				  ,p.IdUnidadMedida
+				  ,um.Descripcion 'Unidad Medida'
+				  ,p.CodigoBarra
+				  ,p.Descripcion Producto
+				  ,p.PrecioUnitario
+				  ,p.PorcentajeUtilidad
+				  ,p.PorcentajeDescuento
+					FROM Productos p
+					INNER JOIN UnidadesMedidas um ON p.IdUnidadMedida = um.IdUnidadMedida
+					WHERE p.Activo = 1 AND um.Activo = 1
+		END
+	ELSE
+		BEGIN
+			SELECT p.IdProducto
+				  ,p.IdUnidadMedida
+				  ,um.Descripcion 'Unidad Medida'
+				  ,p.CodigoBarra
+				  ,p.Descripcion Producto
+				  ,p.PrecioUnitario
+				  ,p.PorcentajeUtilidad
+				  ,p.PorcentajeDescuento
+					FROM Productos p
+					INNER JOIN UnidadesMedidas um ON p.IdUnidadMedida = um.IdUnidadMedida
+					WHERE p.Activo = 1 AND um.Activo = 1 AND p.IdProducto = @IdProducto
+		END
+END
+GO
+-- Finalizado hasta la tabla Producto
+
+
+
+
+
+
+
+
+
+
+
+
+
+GO
+
 INSERT INTO Rol (Descripcion, IdUsuarioRegistro, FechaRegistro, Activo)
 	VALUES ('Administrador', 1, GETDATE(), 1),
 	('Gerente', 1, GETDATE(), 1),
