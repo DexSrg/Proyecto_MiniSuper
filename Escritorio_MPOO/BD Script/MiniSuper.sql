@@ -129,6 +129,7 @@ CREATE TABLE DetallesFacturas (
    ,Activo BIT NOT NULL
 )
 GO
+
 --Procedimientos almacenados (stored procedures)
 CREATE PROC InsertarUsuario @IdRol INT,
 @NombreCompleto VARCHAR(200),
@@ -305,12 +306,14 @@ BEGIN
 	BEGIN
 		SELECT IdUnidadMedida,Descripcion 
 		FROM UnidadesMedidas
+		WHERE Activo = 1
 	END
 	ELSE
 	BEGIN
 		SELECT IdUnidadMedida,Descripcion
 		FROM UnidadesMedidas 
 		WHERE IdUnidadMedida = @IdUnidadMedida
+		AND Activo = 1
 	END
 END
 GO
@@ -358,6 +361,7 @@ BEGIN
 			IdRol
 		   ,Descripcion AS Rol
 		FROM Rol
+		WHERE Activo = 1
 	END
 	ELSE
 	BEGIN
@@ -365,7 +369,7 @@ BEGIN
 			IdRol
 		   ,Descripcion AS Rol
 		FROM Rol
-		WHERE IdRol = @IdRol
+		WHERE IdRol = @IdRol AND Activo = 1
 	END
 END
 GO
@@ -455,22 +459,382 @@ BEGIN
 		END
 END
 GO
--- Finalizado hasta la tabla Producto
+CREATE PROC InsertarInventario
+@IdProducto INT,
+@Lote INT,
+@Cantidad INT ,
+@FechaCaducidad DATETIME,
+@IdUsuarioRegistro INT
+AS
+BEGIN
+	INSERT INTO Inventario (IdProducto, Lote, Cantidad, FechaCaducidad, IdUsuarioRegistro, FechaRegistro, Activo)
+	VALUES (@IdProducto, @Lote, @Cantidad, @FechaCaducidad, @IdUsuarioRegistro, GETDATE(),1);
+	SELECT SCOPE_IDENTITY();
+END
+GO
+CREATE PROC ActualizarInventario
+@IdInventario INT,
+@IdProducto INT,
+@Lote INT,
+@Cantidad INT ,
+@FechaCaducidad DATETIME,
+@IdUsuarioActualiza INT
+AS
+BEGIN
+	UPDATE Inventario 
+SET IdProducto = @IdProducto
+   ,Lote = @Lote
+   ,Cantidad = @Cantidad
+   ,FechaCaducidad = @FechaCaducidad
+   ,IdUsuarioActualiza = @IdUsuarioActualiza
+   ,FechaActualizacion = GETDATE()
+WHERE IdInventario = @IdInventario;
+END
+GO
+CREATE PROC AnularInventario
+@IdInventario INT,
+@IdUsuarioActualiza INT
+AS
+BEGIN
+	UPDATE Inventario 
+	SET IdUsuarioActualiza = @IdUsuarioActualiza
+   ,FechaActualizacion = GETDATE()
+   ,Activo = 0
+END
+GO
+CREATE PROC ListarInventario
+@Todos BIT,
+@Inventario INT = 0
+AS
+BEGIN
+	IF(@Todos = 1)
+		BEGIN
+    		SELECT i.IdInventario
+				  ,i.IdProducto
+				  ,P.IdUnidadMedida
+				  ,um.Descripcion 'Unid.Medida'
+				  ,i.Lote
+				  ,P.CodigoBarra
+				  ,P.Descripcion Producto
+				  ,i.Cantidad
+				  ,i.FechaCaducidad
+				  ,p.PrecioUnitario
+				  ,P.PorcentajeUtilidad
+				  ,P.PorcentajeDescuento
+				  FROM Inventario i
+				  INNER JOIN Productos p ON i.IdProducto = p.IdProducto
+				  INNER JOIN UnidadesMedidas um ON p.IdUnidadMedida = um.IdUnidadMedida
+				  WHERE p.Activo = 1 AND i.Activo = 1 
+		END
+	ELSE
+		BEGIN
+    		SELECT i.IdInventario
+				  ,i.IdProducto
+				  ,P.IdUnidadMedida
+				  ,um.Descripcion 'Unid.Medida'
+				  ,i.Lote
+				  ,P.CodigoBarra
+				  ,P.Descripcion Producto
+				  ,i.Cantidad
+				  ,i.FechaCaducidad
+				  ,p.PrecioUnitario
+				  ,P.PorcentajeUtilidad
+				  ,P.PorcentajeDescuento
+				  FROM Inventario i
+				  INNER JOIN Productos p ON i.IdProducto = p.IdProducto
+				  INNER JOIN UnidadesMedidas um ON p.IdUnidadMedida = um.IdUnidadMedida
+				  WHERE p.Activo = 1 AND i.Activo = 1 
+				  AND i.IdInventario = @Inventario
+		END
+END
+GO
+CREATE PROC InsertarFactura
+@IdCliente INT,
+@FechaFactura VARCHAR(100),
+@TotalSinIVA DECIMAL(18,2),
+@Descuento DECIMAL(18,2),
+@IVA DECIMAL(18,2),
+@TotalPagar DECIMAL(18,2),
+@IdUsuarioRegistro INT
+AS
+BEGIN
+	INSERT INTO Facturas (IdCliente, CodigoFactura, FechaFactura, TotalSinIVA, Descuento, IVA, TotalPagar, IdUsuarioRegistro, FechaRegistro, Activo)
+	VALUES (@IdCliente, '0', GETDATE(), @TotalSinIVA, @Descuento, @IVA, @TotalPagar, @IdUsuarioRegistro, GETDATE(),1);	
+SELECT SCOPE_IDENTITY();
+END
+GO
+CREATE TRIGGER GenerarCodigoFactura
+ON Facturas
+FOR INSERT
+AS
+DECLARE @ID INT ;
+SET @ID = (SELECT IdFactura FROM INSERTED);
 
+UPDATE Facturas 
+SET 
+   CodigoFactura = 'FAC-' + YEAR(GETDATE()) + @ID
 
+WHERE IdFactura = @ID;
+GO
+CREATE PROC ActualizarFactura
+@IdFactura INT,
+@IdCliente INT,
+@FechaFactura VARCHAR(100),
+@TotalSinIVA DECIMAL(18,2),
+@Descuento DECIMAL(18,2),
+@IVA DECIMAL(18,2),
+@TotalPagar DECIMAL(18,2),
+@IdUsuarioActualizacion INT
+AS
+BEGIN
+	UPDATE Facturas 
+SET 
+	IdCliente = @IdCliente
+   ,TotalSinIVA = @TotalSinIVA
+   ,Descuento = @Descuento
+   ,IVA = @IVA
+   ,TotalPagar = @TotalPagar
+   ,IdUsuarioActualiza = @IdUsuarioActualizacion
+   ,FechaActualizacion = GETDATE()
+WHERE IdFactura = @IdFactura;
+SELECT SCOPE_IDENTITY();
+END
+GO
+CREATE PROC AnularFactura
+@IdFactura INT,
+@IdUsuarioActualizacion INT
+AS
+BEGIN
+	UPDATE Facturas 
+SET
+    IdUsuarioActualiza = @IdUsuarioActualizacion
+   ,FechaActualizacion = GETDATE()
+   ,Activo = 0
+WHERE IdFactura = @IdFactura;
+END
+GO
+CREATE PROC ListarFactura
+@Todos BIT,
+@IdFactura INT = 0
+AS
+BEGIN
+	IF(@Todos=1)
+	BEGIN
+    	SELECT 
+			   f.IdFactura
+			  ,f.IdCliente
+			  ,c.NombreCompleto
+			  ,f.CodigoFactura
+			  ,f.FechaFactura
+			  ,f.TotalSinIVA
+			  ,f.Descuento
+			  ,f.IVA
+			  ,f.TotalPagar
+			  FROM Facturas f
+			  INNER JOIN Clientes c ON f.IdCliente = c.IdCliente
+			  WHERE c.Activo = 1 AND f.Activo = 1 
+    END
+	ELSE
+	BEGIN
+    	SELECT 
+			   f.IdFactura
+			  ,f.IdCliente
+			  ,c.NombreCompleto
+			  ,f.CodigoFactura
+			  ,f.FechaFactura
+			  ,f.TotalSinIVA
+			  ,f.Descuento
+			  ,f.IVA
+			  ,f.TotalPagar
+			  FROM Facturas f
+			  INNER JOIN Clientes c ON f.IdCliente = c.IdCliente
+			  WHERE c.Activo = 1 AND f.Activo = 1 
+			  AND f.IdFactura = @IdFactura
+    END
+END
+GO
+CREATE PROC InsertarDetalleFacturas
+@IdProducto INT,
+@IdFactura INT,
+@PrecioUnitario DECIMAL(18,2),
+@Cantidad DECIMAL(18,2),
+@TotalSinIVA DECIMAL(18,2),
+@IVA DECIMAL(18,2),
+@Descuento DECIMAL (18,2),
+@TotalPagar DECIMAL(18,2),
+@IdUsuarioRegistro INT
+AS
+BEGIN
+	INSERT INTO DetallesFacturas (IdProducto, IdFactura, PrecioUnitario, Cantidad, TotalSinIVA, IVA, Descuento, TotalPagar, IdUsuarioRegistro, FechaRegistro, Activo)
+	VALUES (@IdProducto, @IdProducto, @PrecioUnitario, @Cantidad, @TotalSinIVA, @IVA, @Descuento, @TotalPagar, @IdUsuarioRegistro, GETDATE(), 1);	
+SELECT SCOPE_IDENTITY();
+END
+GO
+CREATE PROC ActualizarDetalleFacturas
+@IdDetalleFactura INT,
+@IdProducto INT,
+@IdFactura INT,
+@PrecioUnitario DECIMAL(18,2),
+@Cantidad DECIMAL(18,2),
+@TotalSinIVA DECIMAL(18,2),
+@IVA DECIMAL(18,2),
+@Descuento DECIMAL (18,2),
+@TotalPagar DECIMAL(18,2),
+@IdUsuarioActualiza INT
+AS
+BEGIN
+	UPDATE DetallesFacturas 
+SET 
+	IdProducto = @IdProducto
+   ,IdFactura = @IdFactura
+   ,PrecioUnitario = @PrecioUnitario
+   ,Cantidad = @Cantidad
+   ,TotalSinIVA = @TotalSinIVA
+   ,IVA = @IVA
+   ,Descuento = @Descuento
+   ,TotalPagar = @TotalPagar
+   ,IdUsuarioActualiza = @IdUsuarioActualiza
+   ,FechaActualizacion = GETDATE()
+WHERE IdDetalleFactura = @IdDetalleFactura;
+END
+GO
+CREATE PROC AnularDetalleFacturas
+@IdDetalleFactura INT,
+@IdUsuarioActualiza INT
+AS
+BEGIN
+	UPDATE DetallesFacturas 
+SET 
+    IdUsuarioActualiza = @IdUsuarioActualiza
+   ,FechaActualizacion = GETDATE()
+   ,Activo = 0
+WHERE IdDetalleFactura = @IdDetalleFactura;
+END
+GO
+CREATE PROC ListarDetalleFacturas
+@Todos BIT ,
+@IdDetalleFactura INT 
+AS
+BEGIN
+	IF(@Todos = 1)
+		BEGIN
+    		SELECT 
+			df.IdDetalleFactura
+				  ,df.IdProducto
+				  ,P.Descripcion Producto
+				  ,df.IdFactura
+				  ,f.CodigoFactura
+				  ,f.FechaFactura
+				  ,df.PrecioUnitario
+				  ,df.Cantidad
+				  ,df.TotalSinIVA
+				  ,df.IVA
+				  ,df.Descuento
+				  ,df.TotalPagar
+				  FROM DetallesFacturas df
+				  INNER JOIN Productos p ON df.IdProducto = p.IdProducto
+				  INNER JOIN Facturas f ON df.IdFactura = f.IdFactura
+				  WHERE p.Activo = 1 AND f.Activo = 1 AND df.Activo = 1
+		END
+	ELSE
+		BEGIN
+    		SELECT 
+			df.IdDetalleFactura
+				  ,df.IdProducto
+				  ,P.Descripcion Producto
+				  ,df.IdFactura
+				  ,f.CodigoFactura
+				  ,f.FechaFactura
+				  ,df.PrecioUnitario
+				  ,df.Cantidad
+				  ,df.TotalSinIVA
+				  ,df.IVA
+				  ,df.Descuento
+				  ,df.TotalPagar
+				  FROM DetallesFacturas df
+				  INNER JOIN Productos p ON df.IdProducto = p.IdProducto
+				  INNER JOIN Facturas f ON df.IdFactura = f.IdFactura
+				  WHERE p.Activo = 1 AND f.Activo = 1 AND df.Activo = 1
+				  AND df.IdDetalleFactura = @IdDetalleFactura
+		END
+END
+GO
+CREATE PROC InsertarCliente
+@NombreCompleto VARCHAR(200),
+@Identificacion VARCHAR(200),
+@Celular VARCHAR(8),
+@Correo VARCHAR(200),
+@IdUsuarioRegistro INT
+AS
+BEGIN 
+INSERT INTO Clientes (NombreCompleto, Identificacion, Celular, Correo, IdUsuarioRegistro, FechaRegistro, Activo)
+	VALUES (@NombreCompleto, @Identificacion, @Identificacion, @Correo, @IdUsuarioRegistro, GETDATE(), 1);
+	SELECT SCOPE_IDENTITY();
+END 
+GO
+CREATE PROC ActualizarCliente 
+@IdCliente INT,
+@NombreCompleto VARCHAR(200),
+@Identificacion VARCHAR(200),
+@Celular VARCHAR(8),
+@Correo VARCHAR(200),
+@IdUsuarioActualizar INT
+AS
+BEGIN
+	UPDATE Clientes 
+SET NombreCompleto = @NombreCompleto
+   ,Identificacion = @Identificacion
+   ,Celular = @Celular
+   ,Correo = @Correo
+   ,IdUsuarioActualiza = @IdUsuarioActualizar
+   ,FechaActualizacion = GETDATE()
+WHERE IdCliente = @IdCliente;
+END
+GO
+CREATE PROC AnularCliente 
+@IdCliente INT,
+@IdUsuarioActualizar INT
+AS
+BEGIN
+	UPDATE Clientes 
+SET 
+    IdUsuarioActualiza = @IdUsuarioActualizar
+   ,FechaActualizacion = GETDATE()
+   ,Activo = 0
+WHERE IdCliente = @IdCliente;
+END
+GO
+CREATE PROC ListarClientes
+@Todos BIT,
+@IdCliente INT
+AS
+BEGIN
+	IF(@Todos = 1)
+	BEGIN	
+		SELECT 
+			   c.IdCliente
+			  ,c.NombreCompleto
+			  ,c.Identificacion
+			  ,c.Celular
+			  ,c.Correo
+			  FROM Clientes c
+			  WHERE c.Activo = 1
+	END
+	ELSE
+	BEGIN
+		SELECT 
+			   c.IdCliente
+			  ,c.NombreCompleto
+			  ,c.Identificacion
+			  ,c.Celular
+			  ,c.Correo
+			  FROM Clientes c
+			  WHERE c.Activo = 1 AND c.IdCliente = @IdCliente
+	END
 
-
-
-
-
-
-
-
-
-
+END
 
 GO
-
 INSERT INTO Rol (Descripcion, IdUsuarioRegistro, FechaRegistro, Activo)
 	VALUES ('Administrador', 1, GETDATE(), 1),
 	('Gerente', 1, GETDATE(), 1),
@@ -485,7 +849,3 @@ EXEC InsertarUsuario @IdRol = 1
 					,@IdUsuarioRegistro = 1
 --Password del usuario admin es 123
 GO
-
-
-
-
