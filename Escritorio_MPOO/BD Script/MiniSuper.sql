@@ -488,7 +488,7 @@ SET IdProducto = @IdProducto
    ,FechaCaducidad = @FechaCaducidad
    ,IdUsuarioActualiza = @IdUsuarioActualiza
    ,FechaActualizacion = GETDATE()
-WHERE IdInventario = @IdInventario;
+WHERE IdInventario = @IdInventario
 END
 GO
 CREATE PROC AnularInventario
@@ -500,6 +500,7 @@ BEGIN
 	SET IdUsuarioActualiza = @IdUsuarioActualiza
    ,FechaActualizacion = GETDATE()
    ,Activo = 0
+   WHERE IdInventario = @IdInventario
 END
 GO
 CREATE PROC ListarInventario
