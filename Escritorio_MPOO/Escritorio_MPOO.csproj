@@ -47,6 +47,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AdministrarClientes.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AdministrarClientes.Designer.cs">
+      <DependentUpon>AdministrarClientes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="AdministrarUnidadesMedidas.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AdministrarUnidadesMedidas.Designer.cs">
+      <DependentUpon>AdministrarUnidadesMedidas.cs</DependentUpon>
+    </Compile>
     <Compile Include="AdministrarUsuarios.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -67,6 +79,12 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="AdministrarClientes.resx">
+      <DependentUpon>AdministrarClientes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="AdministrarUnidadesMedidas.resx">
+      <DependentUpon>AdministrarUnidadesMedidas.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="AdministrarUsuarios.resx">
       <DependentUpon>AdministrarUsuarios.cs</DependentUpon>
     </EmbeddedResource>

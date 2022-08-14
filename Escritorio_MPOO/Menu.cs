@@ -228,7 +228,8 @@ namespace Escritorio_MPOO
 
         private void btnClientes_Click(object sender, EventArgs e)
         {
-
+            AdministrarClientes frmAdministracionClientes = new AdministrarClientes();
+            frmAdministracionClientes.Show();
         }
 
         private void btnUsuarios_Click(object sender, EventArgs e)
